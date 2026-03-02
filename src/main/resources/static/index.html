@@ -1,0 +1,1337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Student Management System</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0f;
+      --surface: #12121a;
+      --card: #1a1a26;
+      --border: #2a2a3d;
+      --accent: #6c63ff;
+      --accent2: #ff6584;
+      --accent3: #43e97b;
+      --text: #e8e8f0;
+      --muted: #6b6b85;
+      --danger: #ff4d6d;
+      --success: #43e97b;
+      --warning: #ffd166;
+      --mono: 'DM Mono', monospace;
+      --sans: 'Syne', sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Background grid */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(108,99,255,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(108,99,255,0.04) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Glowing orbs */
+    body::after {
+      content: '';
+      position: fixed;
+      width: 600px; height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(108,99,255,0.08) 0%, transparent 70%);
+      top: -200px; right: -200px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ─── LAYOUT ─── */
+    .app {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      min-height: 100vh;
+    }
+
+    /* ─── SIDEBAR ─── */
+    .sidebar {
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 32px 0;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+    }
+
+    .logo {
+      padding: 0 28px 32px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: linear-gradient(135deg, #6c63ff22, #ff658422);
+      border: 1px solid #6c63ff44;
+      border-radius: 12px;
+      padding: 10px 16px;
+    }
+
+    .logo-icon {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+    }
+
+    .logo-text {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .nav {
+      padding: 24px 16px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .nav-label {
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 8px 12px;
+      margin-top: 8px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--muted);
+      transition: all 0.2s;
+      border: 1px solid transparent;
+      user-select: none;
+    }
+
+    .nav-item:hover {
+      background: var(--card);
+      color: var(--text);
+    }
+
+    .nav-item.active {
+      background: linear-gradient(135deg, #6c63ff18, #6c63ff08);
+      border-color: #6c63ff33;
+      color: var(--accent);
+    }
+
+    .nav-item .nav-icon { font-size: 18px; width: 20px; text-align: center; }
+
+    /* ─── MAIN ─── */
+    .main {
+      padding: 40px;
+      overflow-y: auto;
+    }
+
+    .page { display: none; animation: fadeUp 0.3s ease; }
+    .page.active { display: block; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ─── PAGE HEADER ─── */
+    .page-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 36px;
+    }
+
+    .page-title {
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+    }
+
+    .page-title span {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .page-sub {
+      font-size: 14px;
+      color: var(--muted);
+      margin-top: 6px;
+      font-family: var(--mono);
+    }
+
+    /* ─── CARDS / PANELS ─── */
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+      margin-bottom: 24px;
+      transition: border-color 0.2s;
+    }
+
+    .panel:hover { border-color: #3a3a55; }
+
+    .panel-title {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .panel-title::before {
+      content: '';
+      width: 3px; height: 14px;
+      background: var(--accent);
+      border-radius: 2px;
+    }
+
+    /* ─── FORMS ─── */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .form-group.full { grid-column: 1 / -1; }
+
+    label {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    input, select {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 16px;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 14px;
+      outline: none;
+      transition: all 0.2s;
+      width: 100%;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(108,99,255,0.15);
+    }
+
+    input::placeholder { color: var(--muted); }
+
+    select option { background: var(--card); }
+
+    /* ─── BUTTONS ─── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      font-family: var(--sans);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), #8b85ff);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 24px rgba(108,99,255,0.4);
+    }
+
+    .btn-danger {
+      background: linear-gradient(135deg, var(--danger), #ff6b81);
+      color: #fff;
+    }
+
+    .btn-danger:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 24px rgba(255,77,109,0.4);
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, var(--success), #38d96e);
+      color: #0a0a0f;
+    }
+
+    .btn-success:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 24px rgba(67,233,123,0.3);
+    }
+
+    .btn-ghost {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    .btn-ghost:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn:active { transform: translateY(0); }
+
+    /* ─── TABLE ─── */
+    .table-wrap { overflow-x: auto; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    thead tr {
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      text-align: left;
+      padding: 12px 16px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-family: var(--mono);
+    }
+
+    tbody tr {
+      border-bottom: 1px solid rgba(42,42,61,0.5);
+      transition: background 0.15s;
+    }
+
+    tbody tr:hover { background: rgba(108,99,255,0.04); }
+
+    td {
+      padding: 14px 16px;
+      font-family: var(--mono);
+      font-size: 13px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      font-family: var(--mono);
+    }
+
+    .badge-purple { background: rgba(108,99,255,0.15); color: var(--accent); }
+    .badge-green { background: rgba(67,233,123,0.12); color: var(--success); }
+    .badge-red { background: rgba(255,77,109,0.12); color: var(--danger); }
+
+    .actions { display: flex; gap: 8px; }
+
+    .action-btn {
+      padding: 6px 12px;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 12px;
+      font-family: var(--mono);
+      transition: all 0.2s;
+    }
+
+    .action-btn:hover { color: var(--accent); border-color: var(--accent); }
+    .action-btn.del:hover { color: var(--danger); border-color: var(--danger); }
+
+    /* ─── RESULT BOX ─── */
+    .result-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      font-family: var(--mono);
+      font-size: 13px;
+      line-height: 1.6;
+      min-height: 60px;
+      color: var(--text);
+      white-space: pre-wrap;
+      word-break: break-all;
+      transition: border-color 0.3s;
+    }
+
+    .result-box.success { border-color: var(--success); color: var(--success); }
+    .result-box.error { border-color: var(--danger); color: var(--accent2); }
+    .result-box.loading { border-color: var(--accent); color: var(--muted); }
+
+    /* ─── TOAST ─── */
+    .toast-container {
+      position: fixed;
+      bottom: 32px;
+      right: 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 9999;
+    }
+
+    .toast {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 20px;
+      font-size: 13px;
+      font-family: var(--mono);
+      max-width: 320px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      animation: slideIn 0.3s ease;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+
+    .toast.success { border-color: var(--success); }
+    .toast.error { border-color: var(--danger); }
+    .toast .toast-icon { font-size: 18px; }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(20px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    /* ─── STATS CARDS ─── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .stat-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 22px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: -30px; right: -30px;
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      opacity: 0.15;
+    }
+
+    .stat-card:nth-child(1)::before { background: var(--accent); }
+    .stat-card:nth-child(2)::before { background: var(--accent2); }
+    .stat-card:nth-child(3)::before { background: var(--accent3); }
+
+    .stat-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    .stat-val {
+      font-size: 36px;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    /* ─── DIVIDER ─── */
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 24px 0;
+    }
+
+    /* ─── STUDENT DETAIL CARD ─── */
+    .student-detail {
+      background: linear-gradient(135deg, rgba(108,99,255,0.08), rgba(255,101,132,0.05));
+      border: 1px solid rgba(108,99,255,0.25);
+      border-radius: 14px;
+      padding: 24px;
+    }
+
+    .student-detail-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .avatar {
+      width: 52px; height: 52px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+      font-weight: 800;
+      color: #fff;
+      flex-shrink: 0;
+    }
+
+    .course-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(108,99,255,0.12);
+      border: 1px solid rgba(108,99,255,0.2);
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-family: var(--mono);
+      color: #a8a4ff;
+      margin: 4px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .empty-state .empty-icon { font-size: 40px; margin-bottom: 12px; }
+
+    /* ─── TABS ─── */
+    .tab-bar {
+      display: flex;
+      gap: 4px;
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 4px;
+      margin-bottom: 24px;
+      border: 1px solid var(--border);
+    }
+
+    .tab {
+      flex: 1;
+      padding: 10px;
+      text-align: center;
+      border-radius: 9px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      transition: all 0.2s;
+      user-select: none;
+    }
+
+    .tab.active {
+      background: var(--card);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+      .form-grid { grid-template-columns: 1fr; }
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-badge">
+        <div class="logo-icon">🎓</div>
+        <span class="logo-text">SMS</span>
+      </div>
+    </div>
+    <nav class="nav">
+      <span class="nav-label">Overview</span>
+      <div class="nav-item active" data-page="dashboard">
+        <span class="nav-icon">⬡</span> Dashboard
+      </div>
+
+      <span class="nav-label">Students</span>
+      <div class="nav-item" data-page="student-save">
+        <span class="nav-icon">＋</span> Add Student
+      </div>
+      <div class="nav-item" data-page="student-find">
+        <span class="nav-icon">◎</span> Find Student
+      </div>
+      <div class="nav-item" data-page="student-list">
+        <span class="nav-icon">≡</span> All Students
+      </div>
+      <div class="nav-item" data-page="student-delete">
+        <span class="nav-icon">✕</span> Delete Student
+      </div>
+      <div class="nav-item" data-page="student-assign">
+        <span class="nav-icon">⇌</span> Assign Course
+      </div>
+
+      <span class="nav-label">Courses</span>
+      <div class="nav-item" data-page="course-save">
+        <span class="nav-icon">＋</span> Add Course
+      </div>
+      <div class="nav-item" data-page="course-find">
+        <span class="nav-icon">◎</span> Find Course
+      </div>
+      <div class="nav-item" data-page="course-list">
+        <span class="nav-icon">≡</span> All Courses
+      </div>
+      <div class="nav-item" data-page="course-delete">
+        <span class="nav-icon">✕</span> Delete Course
+      </div>
+    </nav>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main">
+
+    <!-- ─── DASHBOARD ─── -->
+    <section class="page active" id="page-dashboard">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Welcome Back<br><span>Dashboard</span></div>
+        </div>
+        <button class="btn btn-ghost" id="refresh-stats">↻ Refresh</button>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Total Students</div>
+          <div class="stat-val" id="stat-students">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total Courses</div>
+          <div class="stat-val" id="stat-courses">—</div>
+        </div>
+
+      </div>
+      <div class="panel">
+        <div class="panel-title">Quick Access</div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+          <button class="btn btn-primary" data-goto="student-save">＋ Add Student</button>
+          <button class="btn btn-success" data-goto="course-save">＋ Add Course</button>
+          <button class="btn btn-ghost" data-goto="student-list">View All Students</button>
+          <button class="btn btn-ghost" data-goto="course-list">View All Courses</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── ADD STUDENT ─── -->
+    <section class="page" id="page-student-save">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Add <span>Student</span></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">Student Details</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Full Name *</label>
+            <input type="text" id="s-name" placeholder="John Doe" />
+          </div>
+          <div class="form-group">
+            <label>Email Address *</label>
+            <input type="email" id="s-email" placeholder="john@example.com" />
+          </div>
+          <div class="form-group">
+            <label>Age *</label>
+            <input type="number" id="s-age" placeholder="18" min="18" />
+          </div>
+        </div>
+        <div style="margin-top:20px;">
+          <button class="btn btn-primary" id="btn-save-student">➤ Save Student</button>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">Response</div>
+        <div class="result-box" id="res-save-student">Awaiting request...</div>
+      </div>
+    </section>
+
+    <!-- ─── FIND STUDENT ─── -->
+    <section class="page" id="page-student-find">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Find <span>Student</span></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">Search by ID</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Student ID</label>
+            <input type="number" id="s-find-id" placeholder="e.g. 1" />
+          </div>
+        </div>
+        <div style="margin-top:20px;">
+          <button class="btn btn-primary" id="btn-find-student">◎ Find Student</button>
+        </div>
+      </div>
+      <div id="student-detail-container"></div>
+    </section>
+
+    <!-- ─── ALL STUDENTS ─── -->
+    <section class="page" id="page-student-list">
+      <div class="page-header">
+        <div>
+          <div class="page-title">All <span>Students</span></div>
+        </div>
+        <button class="btn btn-ghost" id="btn-load-students">↻ Load</button>
+      </div>
+      <div class="panel">
+        <div id="students-table-wrap">
+          <div class="empty-state">
+            <div class="empty-icon">👥</div>
+            <div>Click Load to fetch all students</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── DELETE STUDENT ─── -->
+    <section class="page" id="page-student-delete">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Delete <span>Student</span></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">Delete by ID</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Student ID</label>
+            <input type="number" id="s-del-id" placeholder="e.g. 1" />
+          </div>
+        </div>
+        <div style="margin-top:20px;">
+          <button class="btn btn-danger" id="btn-del-student">✕ Delete Student</button>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">Response</div>
+        <div class="result-box" id="res-del-student">Awaiting request...</div>
+      </div>
+    </section>
+
+    <!-- ─── ASSIGN COURSE ─── -->
+    <section class="page" id="page-student-assign">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Assign <span>Course</span></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">Assignment Details</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Student ID</label>
+            <input type="number" id="assign-student-id" placeholder="e.g. 1" />
+          </div>
+          <div class="form-group">
+            <label>Course ID</label>
+            <input type="number" id="assign-course-id" placeholder="e.g. 1" />
+          </div>
+        </div>
+        <div style="margin-top:20px;">
+          <button class="btn btn-success" id="btn-assign-course">⇌ Assign Course</button>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">Response</div>
+        <div class="result-box" id="res-assign-course">Awaiting request...</div>
+      </div>
+    </section>
+
+    <!-- ─── ADD COURSE ─── -->
+    <section class="page" id="page-course-save">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Add <span>Course</span></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">Course Details</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Course Title *</label>
+            <input type="text" id="c-title" placeholder="e.g. Spring Boot Mastery" />
+          </div>
+          <div class="form-group">
+            <label>Duration (hours)</label>
+            <input type="number" id="c-duration" placeholder="e.g. 40" min="1" />
+          </div>
+          <div class="form-group full">
+            <label>Description</label>
+            <input type="text" id="c-desc" placeholder="A brief description..." />
+          </div>
+        </div>
+        <div style="margin-top:20px;">
+          <button class="btn btn-primary" id="btn-save-course">➤ Save Course</button>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">Response</div>
+        <div class="result-box" id="res-save-course">Awaiting request...</div>
+      </div>
+    </section>
+
+    <!-- ─── FIND COURSE ─── -->
+    <section class="page" id="page-course-find">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Find <span>Course</span></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">Search by ID</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Course ID</label>
+            <input type="number" id="c-find-id" placeholder="e.g. 1" />
+          </div>
+        </div>
+        <div style="margin-top:20px;">
+          <button class="btn btn-primary" id="btn-find-course">◎ Find Course</button>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">Response</div>
+        <div class="result-box" id="res-find-course">Awaiting request...</div>
+      </div>
+    </section>
+
+    <!-- ─── ALL COURSES ─── -->
+    <section class="page" id="page-course-list">
+      <div class="page-header">
+        <div>
+          <div class="page-title">All <span>Courses</span></div>
+        </div>
+        <button class="btn btn-ghost" id="btn-load-courses">↻ Load</button>
+      </div>
+      <div class="panel">
+        <div id="courses-table-wrap">
+          <div class="empty-state">
+            <div class="empty-icon">📚</div>
+            <div>Click Load to fetch all courses</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── DELETE COURSE ─── -->
+    <section class="page" id="page-course-delete">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Delete <span>Course</span></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">Delete by ID</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Course ID</label>
+            <input type="number" id="c-del-id" placeholder="e.g. 1" />
+          </div>
+        </div>
+        <div style="margin-top:20px;">
+          <button class="btn btn-danger" id="btn-del-course">✕ Delete Course</button>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">Response</div>
+        <div class="result-box" id="res-del-course">Awaiting request...</div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+  const BASE_URL = 'http://localhost:8080';
+
+  // ─── NAVIGATION ───
+  const navItems = document.querySelectorAll('.nav-item');
+  const pages = document.querySelectorAll('.page');
+
+  const showPage = (pageId) => {
+    pages.forEach(p => p.classList.remove('active'));
+    navItems.forEach(n => n.classList.remove('active'));
+    const target = document.getElementById('page-' + pageId);
+    if (target) target.classList.add('active');
+    const nav = document.querySelector(`.nav-item[data-page="${pageId}"]`);
+    if (nav) nav.classList.add('active');
+  };
+
+  navItems.forEach(item => {
+    item.addEventListener('click', () => showPage(item.dataset.page));
+  });
+
+  document.querySelectorAll('[data-goto]').forEach(btn => {
+    btn.addEventListener('click', () => showPage(btn.dataset.goto));
+  });
+
+  // ─── TOAST ───
+  const showToast = (message, type = 'success') => {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.innerHTML = `<span class="toast-icon">${type === 'success' ? '✓' : '✕'}</span><span>${message}</span>`;
+    container.appendChild(toast);
+    setTimeout(() => toast.remove(), 3500);
+  };
+
+  // ─── API HELPER ───
+  const apiFetch = async (method, endpoint, body = null) => {
+    const opts = {
+      method,
+      headers: { 'Content-Type': 'application/json' }
+    };
+    if (body) opts.body = JSON.stringify(body);
+    const res = await fetch(BASE_URL + endpoint, opts);
+    const data = await res.json();
+    return { ok: res.ok, status: res.status, data };
+  };
+
+  // ─── PRETTY RESPONSE RENDERER ───
+  const statusColor = (code) => {
+    if (code >= 200 && code < 300) return 'var(--success)';
+    if (code >= 400) return 'var(--danger)';
+    return 'var(--warning)';
+  };
+
+  const renderValue = (val) => {
+    if (val === null || val === undefined) return `<span style="color:var(--muted)">null</span>`;
+    if (typeof val === 'boolean') return `<span style="color:var(--accent)">${val}</span>`;
+    if (typeof val === 'number') return `<span style="color:#ffd166">${val}</span>`;
+    if (typeof val === 'string') return `<span style="color:var(--text)">${val}</span>`;
+    if (Array.isArray(val)) {
+      if (val.length === 0) return `<span style="color:var(--muted)">[ empty ]</span>`;
+      return val.map(item => `
+        <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-top:6px">
+          ${renderFields(item)}
+        </div>`).join('');
+    }
+    if (typeof val === 'object') return `<div style="padding-left:12px;border-left:2px solid var(--border)">${renderFields(val)}</div>`;
+    return `<span>${val}</span>`;
+  };
+
+  const renderFields = (obj) => {
+    if (!obj || typeof obj !== 'object') return renderValue(obj);
+    return Object.entries(obj).map(([key, val]) => `
+      <div style="display:flex;gap:12px;align-items:flex-start;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.04)">
+        <span style="color:var(--muted);font-size:12px;min-width:110px;flex-shrink:0;font-family:var(--mono);padding-top:1px">${key}</span>
+        <div style="font-size:13px;font-family:var(--mono);flex:1">${renderValue(val)}</div>
+      </div>`).join('');
+  };
+
+  const renderResponse = (el, data, type = '') => {
+    if (typeof data === 'string') {
+      el.innerHTML = `<div style="color:${type==='error'?'var(--danger)':'var(--text)'};font-family:var(--mono);font-size:13px">${data}</div>`;
+      el.className = 'result-box ' + type;
+      return;
+    }
+
+    const statusCode = data.statusCode;
+    const message = data.message;
+    const payload = data.data;
+
+    el.className = 'result-box ' + type;
+    el.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border)">
+        <span style="background:${statusColor(statusCode)}22;color:${statusColor(statusCode)};border:1px solid ${statusColor(statusCode)}44;border-radius:6px;padding:3px 10px;font-size:12px;font-family:var(--mono);font-weight:700">${statusCode}</span>
+        <span style="font-size:13px;font-weight:600;color:var(--text)">${message || ''}</span>
+      </div>
+      <div>${payload !== undefined ? renderValue(payload) : '<span style="color:var(--muted)">No data</span>'}</div>
+    `;
+  };
+
+  // Keep setResult for plain text messages (loading/validation states)
+  const setResult = (el, text, type = '') => {
+    if (typeof text === 'object' && text !== null) {
+      renderResponse(el, text, type);
+    } else {
+      el.innerHTML = `<span style="font-family:var(--mono);font-size:13px;color:${type==='error'?'var(--danger)':type==='loading'?'var(--muted)':'var(--text)'}">${text}</span>`;
+      el.className = 'result-box ' + type;
+    }
+  };
+
+  // ─── DASHBOARD ───
+  const loadDashboard = async () => {
+    try {
+      const [sRes, cRes] = await Promise.all([
+        fetch(BASE_URL + '/students/findAll'),
+        fetch(BASE_URL + '/courses/findAll')
+      ]);
+
+      if (sRes.ok) {
+        const sd = await sRes.json();
+        document.getElementById('stat-students').textContent = Array.isArray(sd.data) ? sd.data.length : '—';
+      }
+      if (cRes.ok) {
+        const cd = await cRes.json();
+        document.getElementById('stat-courses').textContent = Array.isArray(cd.data) ? cd.data.length : '—';
+      }
+    } catch {
+      document.getElementById('stat-students').textContent = '—';
+      document.getElementById('stat-courses').textContent = '—';
+    }
+  };
+
+  document.getElementById('refresh-stats').addEventListener('click', loadDashboard);
+  loadDashboard();
+
+  // ─── SAVE STUDENT ───
+  document.getElementById('btn-save-student').addEventListener('click', async () => {
+    const name = document.getElementById('s-name').value.trim();
+    const email = document.getElementById('s-email').value.trim();
+    const age = parseInt(document.getElementById('s-age').value);
+    const resEl = document.getElementById('res-save-student');
+
+    if (!name || !email || !age) {
+      setResult(resEl, 'Please fill in all required fields.', 'error');
+      return;
+    }
+
+    setResult(resEl, 'Saving student...', 'loading');
+    try {
+      const { ok, data } = await apiFetch('POST', '/students/save', { name, email, age });
+      if (ok) {
+        renderResponse(resEl, data, 'success');
+        showToast('Student saved successfully!');
+        document.getElementById('s-name').value = '';
+        document.getElementById('s-email').value = '';
+        document.getElementById('s-age').value = '';
+      } else {
+        renderResponse(resEl, data, 'error');
+        showToast(data.message || 'Failed to save', 'error');
+      }
+    } catch (err) {
+      setResult(resEl, 'Error: ' + err.message, 'error');
+      showToast('Connection error', 'error');
+    }
+  });
+
+  // ─── FIND STUDENT ───
+  document.getElementById('btn-find-student').addEventListener('click', async () => {
+    const id = document.getElementById('s-find-id').value.trim();
+    const container = document.getElementById('student-detail-container');
+    if (!id) { container.innerHTML = '<div class="panel"><div class="result-box error">Please enter a student ID.</div></div>'; return; }
+
+    container.innerHTML = '<div class="panel"><div class="result-box loading">Fetching student...</div></div>';
+    try {
+      const { ok, data } = await apiFetch('GET', `/students/find/${id}`);
+      if (ok && data.data) {
+        const s = data.data;
+        const initials = s.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+        const coursesHtml = s.courses && s.courses.length
+          ? s.courses.map(c => `<span class="course-tag">📘 ${c.title} <span style="color:var(--muted)">(${c.duration}h)</span></span>`).join('')
+          : '<span style="color:var(--muted);font-size:13px">No courses assigned</span>';
+        container.innerHTML = `
+          <div class="panel">
+            <div class="panel-title">Student Profile</div>
+            <div class="student-detail">
+              <div class="student-detail-header">
+                <div class="avatar">${initials}</div>
+                <div>
+                  <div style="font-size:20px;font-weight:800">${s.name}</div>
+                  <div style="color:var(--muted);font-size:13px;font-family:var(--mono)">${s.email}</div>
+                </div>
+                <span class="badge badge-purple" style="margin-left:auto">ID: ${s.id}</span>
+              </div>
+              <div style="display:flex;gap:24px;margin-bottom:16px;font-family:var(--mono);font-size:13px">
+                <div><span style="color:var(--muted)">Age:</span> <strong>${s.age}</strong></div>
+                <div><span style="color:var(--muted)">Courses:</span> <strong>${s.courses ? s.courses.length : 0}</strong></div>
+              </div>
+              <div class="divider"></div>
+              <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:10px">Enrolled Courses</div>
+              <div>${coursesHtml}</div>
+            </div>
+          </div>`;
+        showToast('Student found!');
+      } else {
+        container.innerHTML = `<div class="panel"><div class="result-box error" id="find-student-err"></div></div>`;
+        renderResponse(document.getElementById('find-student-err'), data, 'error');
+        showToast(data.message || 'Not found', 'error');
+      }
+    } catch (err) {
+      container.innerHTML = `<div class="panel"><div class="result-box error">Error: ${err.message}</div></div>`;
+      showToast('Connection error', 'error');
+    }
+  });
+
+  // ─── ALL STUDENTS ───
+  const renderStudentsTable = (students) => {
+    if (!students.length) {
+      return `<div class="empty-state"><div class="empty-icon">👥</div><div>No students found</div></div>`;
+    }
+    const rows = students.map(s => `
+      <tr>
+        <td><span class="badge badge-purple">#${s.id}</span></td>
+        <td>${s.name}</td>
+        <td style="color:var(--muted)">${s.email}</td>
+        <td>${s.age}</td>
+        <td><span class="badge badge-green">${s.courses ? s.courses.length : 0} courses</span></td>
+      </tr>`).join('');
+    return `
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Age</th><th>Courses</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+  };
+
+  document.getElementById('btn-load-students').addEventListener('click', async () => {
+    const wrap = document.getElementById('students-table-wrap');
+    wrap.innerHTML = '<div class="result-box loading">Loading students...</div>';
+    try {
+      const { ok, data } = await apiFetch('GET', '/students/findAll');
+      if (ok) {
+        wrap.innerHTML = renderStudentsTable(data.data || []);
+        showToast(`Loaded ${(data.data || []).length} students`);
+      } else {
+        wrap.innerHTML = `<div class="result-box error" id="students-err"></div>`;
+        renderResponse(document.getElementById('students-err'), data, 'error');
+        showToast('Failed to load', 'error');
+      }
+    } catch (err) {
+      wrap.innerHTML = `<div class="result-box error">Error: ${err.message}</div>`;
+      showToast('Connection error', 'error');
+    }
+  });
+
+  // ─── DELETE STUDENT ───
+  document.getElementById('btn-del-student').addEventListener('click', async () => {
+    const id = document.getElementById('s-del-id').value.trim();
+    const resEl = document.getElementById('res-del-student');
+    if (!id) { setResult(resEl, 'Please enter a student ID.', 'error'); return; }
+
+    setResult(resEl, `Deleting student #${id}...`, 'loading');
+    try {
+      const { ok, data } = await apiFetch('DELETE', `/students/delete/${id}`);
+      if (ok) {
+        renderResponse(resEl, data, 'success');
+        showToast('Student deleted');
+        document.getElementById('s-del-id').value = '';
+      } else {
+        renderResponse(resEl, data, 'error');
+        showToast(data.message || 'Not found', 'error');
+      }
+    } catch (err) {
+      setResult(resEl, 'Error: ' + err.message, 'error');
+      showToast('Connection error', 'error');
+    }
+  });
+
+  // ─── ASSIGN COURSE ───
+  document.getElementById('btn-assign-course').addEventListener('click', async () => {
+    const sid = document.getElementById('assign-student-id').value.trim();
+    const cid = document.getElementById('assign-course-id').value.trim();
+    const resEl = document.getElementById('res-assign-course');
+    if (!sid || !cid) { setResult(resEl, 'Please enter both Student ID and Course ID.', 'error'); return; }
+
+    setResult(resEl, `Assigning course #${cid} to student #${sid}...`, 'loading');
+    try {
+      const { ok, data } = await apiFetch('POST', `/students/${sid}/courses/${cid}`);
+      if (ok) {
+        renderResponse(resEl, data, 'success');
+        showToast('Course assigned successfully!');
+      } else {
+        renderResponse(resEl, data, 'error');
+        showToast(data.message || 'Assignment failed', 'error');
+      }
+    } catch (err) {
+      setResult(resEl, 'Error: ' + err.message, 'error');
+      showToast('Connection error', 'error');
+    }
+  });
+
+  // ─── SAVE COURSE ───
+  document.getElementById('btn-save-course').addEventListener('click', async () => {
+    const title = document.getElementById('c-title').value.trim();
+    const description = document.getElementById('c-desc').value.trim();
+    const duration = parseInt(document.getElementById('c-duration').value);
+    const resEl = document.getElementById('res-save-course');
+
+    if (!title) { setResult(resEl, 'Please enter a course title.', 'error'); return; }
+
+    setResult(resEl, 'Saving course...', 'loading');
+    try {
+      const { ok, data } = await apiFetch('POST', '/courses/save', { title, description, duration });
+      if (ok) {
+        renderResponse(resEl, data, 'success');
+        showToast('Course saved successfully!');
+        document.getElementById('c-title').value = '';
+        document.getElementById('c-desc').value = '';
+        document.getElementById('c-duration').value = '';
+      } else {
+        renderResponse(resEl, data, 'error');
+        showToast(data.message || 'Failed to save', 'error');
+      }
+    } catch (err) {
+      setResult(resEl, 'Error: ' + err.message, 'error');
+      showToast('Connection error', 'error');
+    }
+  });
+
+  // ─── FIND COURSE ───
+  document.getElementById('btn-find-course').addEventListener('click', async () => {
+    const id = document.getElementById('c-find-id').value.trim();
+    const resEl = document.getElementById('res-find-course');
+    if (!id) { setResult(resEl, 'Please enter a course ID.', 'error'); return; }
+
+    setResult(resEl, `Fetching course #${id}...`, 'loading');
+    try {
+      const { ok, data } = await apiFetch('GET', `/courses/find/${id}`);
+      renderResponse(resEl, data, ok ? 'success' : 'error');
+      showToast(ok ? 'Course found!' : (data.message || 'Not found'), ok ? 'success' : 'error');
+    } catch (err) {
+      setResult(resEl, 'Error: ' + err.message, 'error');
+      showToast('Connection error', 'error');
+    }
+  });
+
+  // ─── ALL COURSES ───
+  const renderCoursesTable = (courses) => {
+    if (!courses.length) {
+      return `<div class="empty-state"><div class="empty-icon">📚</div><div>No courses found</div></div>`;
+    }
+    const rows = courses.map(c => `
+      <tr>
+        <td><span class="badge badge-purple">#${c.id}</span></td>
+        <td>${c.title}</td>
+        <td style="color:var(--muted);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.description || '—'}</td>
+        <td><span class="badge badge-green">${c.duration}h</span></td>
+        <td><span class="badge badge-purple">${c.studentCount ?? 0} students</span></td>
+      </tr>`).join('');
+    return `
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ID</th><th>Title</th><th>Description</th><th>Duration</th><th>Students</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+  };
+
+  document.getElementById('btn-load-courses').addEventListener('click', async () => {
+    const wrap = document.getElementById('courses-table-wrap');
+    wrap.innerHTML = '<div class="result-box loading">Loading courses...</div>';
+    try {
+      const { ok, data } = await apiFetch('GET', '/courses/findAll');
+      if (ok) {
+        wrap.innerHTML = renderCoursesTable(data.data || []);
+        showToast(`Loaded ${(data.data || []).length} courses`);
+      } else {
+        wrap.innerHTML = `<div class="result-box error" id="courses-err"></div>`;
+        renderResponse(document.getElementById('courses-err'), data, 'error');
+        showToast('Failed to load', 'error');
+      }
+    } catch (err) {
+      wrap.innerHTML = `<div class="result-box error">Error: ${err.message}</div>`;
+      showToast('Connection error', 'error');
+    }
+  });
+
+  // ─── DELETE COURSE ───
+  document.getElementById('btn-del-course').addEventListener('click', async () => {
+    const id = document.getElementById('c-del-id').value.trim();
+    const resEl = document.getElementById('res-del-course');
+    if (!id) { setResult(resEl, 'Please enter a course ID.', 'error'); return; }
+
+    setResult(resEl, `Deleting course #${id}...`, 'loading');
+    try {
+      const { ok, data } = await apiFetch('DELETE', `/courses/delete/${id}`);
+      if (ok) {
+        renderResponse(resEl, data, 'success');
+        showToast('Course deleted');
+        document.getElementById('c-del-id').value = '';
+      } else {
+        renderResponse(resEl, data, 'error');
+        showToast(data.message || 'Not found', 'error');
+      }
+    } catch (err) {
+      setResult(resEl, 'Error: ' + err.message, 'error');
+      showToast('Connection error', 'error');
+    }
+  });
+
+  // Enter key support on inputs
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    const active = document.querySelector('.page.active');
+    const btn = active?.querySelector('.btn-primary, .btn-danger, .btn-success');
+    if (btn && e.target.tagName === 'INPUT') btn.click();
+  });
+</script>
+</body>
+</html>
