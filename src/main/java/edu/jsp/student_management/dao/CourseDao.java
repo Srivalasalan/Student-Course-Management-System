@@ -1,8 +1,10 @@
 package edu.jsp.student_management.dao;
 
-import java.util.List;
+
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 import edu.jsp.student_management.entity.Course;
@@ -24,8 +26,8 @@ public class CourseDao {
 		return c.orElse(null);
 	}
 
-	public List<Course> findAllData() {
-		return repo.findAllWithStudents();
+	public Page<Course> findAllData(Pageable pageable) {
+		return repo.findAll(pageable);
 	}
 
 	public boolean deleteById(Long id) {

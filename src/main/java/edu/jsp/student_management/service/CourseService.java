@@ -2,6 +2,10 @@ package edu.jsp.student_management.service;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -53,22 +57,28 @@ public class CourseService {
 		}
 	}
 
-	public ResponseEntity<ResponseStructure<List<CourseResponseDTO>>> findAllData() {
-	    List<Course> courses = cdao.findAllData();
-	    List<CourseResponseDTO> result = courses.stream().map(c -> {
-	        CourseResponseDTO dto = new CourseResponseDTO();
-	        dto.setId(c.getId());
-	        dto.setTitle(c.getTitle());
-	        dto.setDescription(c.getDescription());
-	        dto.setDuration(c.getDuration());
-	        dto.setStudentCount(c.getStudents() != null ? c.getStudents().size() : 0);
-	        return dto;
-	    }).toList();
+	public ResponseEntity<ResponseStructure<List<CourseResponseDTO>>> findAllData(int page, int size, String sortBy) {
+	    
+	    Pageable pageable = PageRequest.of(page, size, Sort.by(sortBy));
+	    Page<Course> pageResult = cdao.findAllData(pageable); 
+	    
+	    List<CourseResponseDTO> result = pageResult.getContent() 
+	        .stream().map(c -> {
+	            CourseResponseDTO dto = new CourseResponseDTO();
+	            dto.setId(c.getId());
+	            dto.setTitle(c.getTitle());
+	            dto.setDescription(c.getDescription());
+	            dto.setDuration(c.getDuration());
+	            dto.setStudentCount(c.getStudents() != null ? c.getStudents().size() : 0);
+	            return dto;
+	        }).toList();
 
 	    ResponseStructure<List<CourseResponseDTO>> rs = new ResponseStructure<>();
+	    
 	    if (!result.isEmpty()) {
 	        rs.setStatusCode(HttpStatus.OK.value());
-	        rs.setMessage("List Of All Courses....");
+	        rs.setMessage("Page " + (page + 1) + " of " + pageResult.getTotalPages()
+	                    + " | Total Courses: " + pageResult.getTotalElements());
 	        rs.setData(result);
 	        return new ResponseEntity<>(rs, HttpStatus.OK);
 	    } else {
@@ -78,7 +88,8 @@ public class CourseService {
 	        return new ResponseEntity<>(rs, HttpStatus.NOT_FOUND);
 	    }
 	}
-
+	
+	
 	public ResponseEntity<ResponseStructure<String>> deleteById(Long id) {
 		boolean res=cdao.deleteById(id);
 		ResponseStructure<String> rs=new ResponseStructure<String>();

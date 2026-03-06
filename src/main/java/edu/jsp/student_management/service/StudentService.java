@@ -2,8 +2,11 @@ package edu.jsp.student_management.service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -77,21 +80,26 @@ public class StudentService {
 	}
 	
 	
-	public ResponseEntity<ResponseStructure<List<Student>>> findAll() {
-		List<Student> s = sdao.findAll();
-		if (!s.isEmpty()) {
-			ResponseStructure<List<Student>> rs = new ResponseStructure<List<Student>>();
-			rs.setStatusCode(HttpStatus.OK.value());
-			rs.setMessage("All Data Retrieved");
-			rs.setData(s);
-			return new ResponseEntity<ResponseStructure<List<Student>>>(rs, HttpStatus.OK);
-		} else {
-			ResponseStructure<List<Student>> rs = new ResponseStructure<List<Student>>();
-			rs.setStatusCode(HttpStatus.NOT_FOUND.value());
-			rs.setMessage("No Data Found!");
-			rs.setData(s);
-			return new ResponseEntity<ResponseStructure<List<Student>>>(rs, HttpStatus.NOT_FOUND);
-		}
+	public ResponseEntity<ResponseStructure<List<Student>>> findAll(int page, int size, String sortBy) {
+	    
+	    Pageable pageable = PageRequest.of(page, size, Sort.by(sortBy));
+	    Page<Student> pageResult = sdao.findAll(pageable);
+	    List<Student> students = pageResult.getContent();
+
+	    ResponseStructure<List<Student>> rs = new ResponseStructure<>();
+
+	    if (!students.isEmpty()) {
+	        rs.setStatusCode(HttpStatus.OK.value());
+	        rs.setMessage("Page " + (page + 1) + " of " + pageResult.getTotalPages()
+	                    + " | Total Students: " + pageResult.getTotalElements());
+	        rs.setData(students);
+	        return new ResponseEntity<>(rs, HttpStatus.OK);
+	    } else {
+	        rs.setStatusCode(HttpStatus.NOT_FOUND.value());
+	        rs.setMessage("No Data Found!");
+	        rs.setData(students);
+	        return new ResponseEntity<>(rs, HttpStatus.NOT_FOUND);
+	    }
 	}
 
 	public ResponseEntity<ResponseStructure<String>> deleteById(Long id) {
