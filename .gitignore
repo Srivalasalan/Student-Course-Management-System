@@ -38,3 +38,4 @@ build/
 /.project
 /.settings
 *.log
+src/main/resources/application.properties
